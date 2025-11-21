@@ -1,69 +1,63 @@
-const fs = require("fs");
+const f = require("fs");
+const j = JSON.parse(f.readFileSync("input.json", "utf8"));
 
-const data = JSON.parse(fs.readFileSync("input.json", "utf8"));
+const n = j.keys.n;
+const k = j.keys.k;
 
-const n = data.keys.n;
-const k = data.keys.k;
+let X = [];
+let Y = [];
+let u = 0;
 
-let xs = [];
-let ys = [];
+for (let q of Object.keys(j)) {
+    if (q === "keys") continue;
+    u++;
+    if (u > k) break;
 
-let count = 0;
-for (let key of Object.keys(data)) {
-    if (key === "keys") continue;
-    count++;
-    if (count > k) break;
+    let bs = parseInt(j[q].base);
+    let vl = j[q].value;
+    let yv = parseInt(vl, bs);
 
-    let base = parseInt(data[key].base);
-    let value = data[key].value;
-
-    let decodedY = parseInt(value, base);
-
-    xs.push(parseInt(key));
-    ys.push(decodedY);
+    X.push(parseInt(q));
+    Y.push(yv);
 }
 
-function buildMatrix(xs, k) {
-    let M = [];
-    for (let i = 0; i < k; i++) {
-        let row = [];
-        for (let p = 0; p < k; p++) {
-            row.push(Math.pow(xs[i], p));
-        }
-        M.push(row);
+function M(a, kk) {
+    let m = [];
+    for (let i = 0; i < kk; i++) {
+        let r = [];
+        for (let p = 0; p < kk; p++) r.push(Math.pow(a[i], p));
+        m.push(r);
     }
-    return M;
+    return m;
 }
 
-function gaussianSolve(A, b) {
-    let n = A.length;
+function S(A, B) {
+    let n1 = A.length;
+    for (let i = 0; i < n1; i++) {
+        let mx = i;
+        for (let j = i + 1; j < n1; j++)
+            if (Math.abs(A[j][i]) > Math.abs(A[mx][i])) mx = j;
 
-    for (let i = 0; i < n; i++) {
-        let maxRow = i;
-        for (let j = i + 1; j < n; j++) {
-            if (Math.abs(A[j][i]) > Math.abs(A[maxRow][i])) maxRow = j;
-        }
+        [A[i], A[mx]] = [A[mx], A[i]];
+        [B[i], B[mx]] = [B[mx], B[i]];
 
-        [A[i], A[maxRow]] = [A[maxRow], A[i]];
-        [b[i], b[maxRow]] = [b[maxRow], b[i]];
-
-        for (let j = i + 1; j < n; j++) {
-            let factor = A[j][i] / A[i][i];
-            for (let k2 = i; k2 < n; k2++) A[j][k2] -= factor * A[i][k2];
-            b[j] -= factor * b[i];
+        for (let j = i + 1; j < n1; j++) {
+            let fc = A[j][i] / A[i][i];
+            for (let k2 = i; k2 < n1; k2++) A[j][k2] -= fc * A[i][k2];
+            B[j] -= fc * B[i];
         }
     }
 
-    let x = Array(n).fill(0);
-    for (let i = n - 1; i >= 0; i--) {
-        let sum = b[i];
-        for (let j = i + 1; j < n; j++) sum -= A[i][j] * x[j];
-        x[i] = sum / A[i][i];
+    let z = Array(n1).fill(0);
+    for (let i = n1 - 1; i >= 0; i--) {
+        let sm = B[i];
+        for (let j = i + 1; j < n1; j++) sm -= A[i][j] * z[j];
+        z[i] = sm / A[i][i];
     }
-    return x;
+    return z;
 }
 
-let M = buildMatrix(xs, k);
-let coefficients = gaussianSolve(M, ys);
+let A = M(X, k);
+let C = S(A, Y);
 
-console.log("Constant term C =", coefficients[0]);
+console.log("C =", C[0]);
